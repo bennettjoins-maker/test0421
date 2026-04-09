@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bennett Joins</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=EB+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:         #F2EFE8;
+    --bg-surface: #EAE6DC;
+    --bg-card:    #F8F6F1;
+    --bg-board:   #ECE8DF;
+    --ink:        #1E1C18;
+    --ink-muted:  #7A7060;
+    --ink-faint:  #B0A898;
+    --gold:       #8C6D38;
+    --gold-dim:   #C4A97A;
+    --border:     #D8D0C0;
+    --border-dim: #E2DAC8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'EB Garamond', serif;
+    font-weight: 300;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── GRAIN ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+  }
+
+  /* ── LAYOUT ── */
+  .site-wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 5rem 2rem 6rem;
+  }
+
+  /* ── HEADER ── */
+  header {
+    text-align: center;
+    margin-bottom: 3.5rem;
+    animation: fadeUp 0.9s ease both;
+  }
+
+  .avatar-ring {
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    border: 1px solid var(--gold-dim);
+    margin: 0 auto 1.8rem;
+    overflow: hidden;
+    background: var(--bg-surface);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 400;
+    color: var(--gold);
+    letter-spacing: 2px;
+  }
+
+  .avatar-ring img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.8rem;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+    margin-bottom: 0.8rem;
+    line-height: 1.1;
+  }
+
+  /* thin gold rule under name */
+  h1::after {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 1px;
+    background: var(--gold-dim);
+    margin: 0.9rem auto 0;
+  }
+
+  .tagline {
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+    font-weight: 300;
+    font-style: italic;
+    line-height: 2;
+    max-width: 340px;
+    margin: 1rem auto 0;
+  }
+
+  /* ── NAV ── */
+  nav {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.3rem 2rem;
+    margin-bottom: 3rem;
+    animation: fadeUp 0.9s 0.15s ease both;
+  }
+
+  nav a {
+    font-family: 'EB Garamond', serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    text-decoration: none;
+    padding: 4px 0;
+    border-bottom: 1px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    cursor: pointer;
+  }
+  nav a:hover {
+    color: var(--gold);
+    border-bottom-color: var(--gold-dim);
+  }
+
+  /* ── BOARD ── */
+  .board-section {
+    animation: fadeUp 0.9s 0.3s ease both;
+  }
+
+  .board-hint {
+    text-align: center;
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 1rem;
+  }
+
+  #board {
+    position: relative;
+    width: 100%;
+    height: 480px;
+    background: var(--bg-board);
+    border: 1px solid var(--border-dim);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  /* ── CARDS ── */
+  .card {
+    position: absolute;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 16px 20px;
+    cursor: grab;
+    user-select: none;
+    width: 168px;
+    transition: box-shadow 0.2s;
+    box-shadow: 2px 4px 16px rgba(30,28,24,0.08);
+  }
+  .card:hover {
+    box-shadow: 4px 8px 28px rgba(30,28,24,0.13);
+  }
+  .card.dragging {
+    cursor: grabbing;
+    box-shadow: 10px 16px 40px rgba(30,28,24,0.18);
+    z-index: 999 !important;
+  }
+
+  .card-category {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 7px;
+    font-family: 'EB Garamond', serif;
+  }
+
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--ink);
+    line-height: 1.4;
+    margin-bottom: 6px;
+  }
+
+  .card-detail {
+    font-size: 11px;
+    color: var(--ink-muted);
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  .card-emoji {
+    font-size: 14px;
+    display: block;
+    margin-bottom: 8px;
+    opacity: 0.6;
+  }
+
+  /* ── CARD TOP ACCENTS ── */
+  .card[data-type="music"] { border-top: 1px solid #7A6040; }
+  .card[data-type="book"]  { border-top: 1px solid #3D5C45; }
+  .card[data-type="place"] { border-top: 1px solid #4A4A6A; }
+  .card[data-type="about"] { border-top: 1px solid var(--gold-dim); }
+
+  /* ── CONTROLS ── */
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.2rem;
+  }
+
+  .btn-ghost {
+    font-family: 'EB Garamond', serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    background: none;
+    border: 1px solid var(--border-dim);
+    border-radius: 0;
+    padding: 6px 22px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-ghost:hover {
+    color: var(--gold);
+    border-color: var(--gold-dim);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    margin-top: 3.5rem;
+    animation: fadeUp 0.9s 0.5s ease both;
+  }
+
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.3rem 2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .footer-links a {
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--gold); }
+
+  .copyright {
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    color: var(--ink-faint);
+    opacity: 0.5;
+  }
+
+  /* ── MODAL ── */
+  .modal-bg {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(30,28,24,0.45);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  .modal-bg.open { display: flex; }
+
+  .modal {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 2.2rem 2.5rem;
+    max-width: 420px;
+    width: 100%;
+    position: relative;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 14px; right: 18px;
+    font-size: 18px;
+    color: var(--ink-faint);
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: 'EB Garamond', serif;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+  .modal-close:hover { color: var(--gold); }
+
+  .modal-category {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 8px;
+  }
+
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--ink);
+    margin-bottom: 1rem;
+    line-height: 1.3;
+  }
+
+  .modal-body {
+    font-size: 14px;
+    color: var(--ink-muted);
+    line-height: 1.9;
+    font-style: italic;
+  }
+
+  .modal-list {
+    list-style: none;
+    margin-top: 1rem;
+  }
+
+  .modal-list li {
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border-dim);
+    font-size: 13px;
+    color: var(--ink-muted);
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+  }
+  .modal-list li:last-child { border-bottom: none; }
+
+  .modal-list .item-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 10px;
+    color: var(--ink-faint);
+    min-width: 16px;
+  }
+
+  .modal-list .item-name {
+    font-weight: 400;
+    font-style: normal;
+    color: var(--ink);
+  }
+
+  .modal-list .item-sub {
+    font-size: 11px;
+    color: var(--ink-faint);
+    display: block;
+    margin-top: 2px;
+    font-style: italic;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── MOBILE ── */
+  @media (max-width: 480px) {
+    .site-wrap { padding: 3rem 1.2rem 4rem; }
+    h1 { font-size: 2.1rem; }
+    #board { height: 400px; }
+    .card { width: 148px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="site-wrap">
+
+  <header>
+    <div class="avatar-ring">BJ</div>
+    <!-- To use a photo, replace the line above with:
+    <div class="avatar-ring"><img src="images/profile.jpg" alt="profile"></div>
+    -->
+    <h1>Bennett Joins</h1>
+    <p class="tagline">my heart is like an open highway<br>like frankie said, i did it my way<br>i just wanna live while i'm alive</p>
+  </header>
+
+  <nav>
+    <a onclick="filterCards('all')">all</a>
+    <a onclick="filterCards('about')">about</a>
+    <a onclick="filterCards('music')">music</a>
+    <a onclick="filterCards('book')">books</a>
+    <a onclick="filterCards('place')">places</a>
+  </nav>
+
+  <div class="board-section">
+    <p class="board-hint">drag to explore · click to read</p>
+    <div id="board"></div>
+    <div class="controls">
+      <button class="btn-ghost" onclick="shuffleCards()">shuffle</button>
+      <button class="btn-ghost" onclick="filterCards('all')">reset</button>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-links">
+      <a href="https://open.spotify.com" target="_blank">Spotify</a>
+      <a href="https://instagram.com" target="_blank">Instagram</a>
+      <a href="mailto:you@email.com">Email</a>
+    </div>
+    <p class="copyright">© 2026 Bennett Joins</p>
+  </footer>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modalBg" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModalDirect()">×</button>
+    <div class="modal-category" id="mCat"></div>
+    <div class="modal-title" id="mTitle"></div>
+    <div class="modal-body" id="mBody"></div>
+  </div>
+</div>
+
+<script>
+// ── CARD DATA ─────────────────────────────────────────────
+// Edit this section to update your content!
+const cards = [
+  {
+    type: 'about',
+    emoji: '✦',
+    category: 'about me',
+    title: 'Bennett Joins',
+    short: 'doing it my way',
+    detail: {
+      desc: 'I believe in living deliberately, collecting experiences (and yes, certificates), and being honest about what I think. Music is always on. The rest, I\'m figuring out as I go.',
+      list: []
+    }
+  },
+  {
+    type: 'music',
+    emoji: '♪',
+    category: 'now playing',
+    title: 'songs on repeat',
+    short: 'playlist · 2026',
+    detail: {
+      desc: 'What\'s been on lately. Press play.',
+      spotify: 'https://open.spotify.com/embed/playlist/3cZcLmJDwaUeLayKjyIbF7?utm_source=generator',
+      list: []
+    }
+  },
+  {
+    type: 'music',
+    emoji: '♫',
+    category: 'all time',
+    title: 'songs I keep returning to',
+    short: 'the ones that never get old',
+    detail: {
+      desc: 'These don\'t belong to any particular season. They just always work.',
+      list: [
+        { name: 'It\'s My Life', sub: 'Bon Jovi — because obviously' },
+        { name: 'Don\'t Stop Me Now', sub: 'Queen — pure unstoppable energy' },
+        { name: 'Dreams', sub: 'Fleetwood Mac — the kind of song that just floats' },
+        { name: 'Mr. Brightside', sub: 'The Killers — everyone knows every word' },
+      ]
+    }
+  },
+  {
+    type: 'book',
+    emoji: '◈',
+    category: 'reading now',
+    title: 'currently reading',
+    short: 'what\'s on the desk',
+    detail: {
+      desc: 'What I\'m in the middle of. I usually have more than one going at a time.',
+      list: [
+        { name: 'The Precipice', sub: 'Toby Ord — on existential risk and what we owe the future' },
+        { name: 'Braiding Sweetgrass', sub: 'Robin Wall Kimmerer — plants, indigenous wisdom, and reciprocity' },
+      ]
+    }
+  },
+  {
+    type: 'book',
+    emoji: '◉',
+    category: 'favourites',
+    title: 'books that stayed with me',
+    short: 'the ones that changed something',
+    detail: {
+      desc: 'Finished these and couldn\'t quite go back to thinking the way I did before.',
+      list: [
+        { name: 'Educated', sub: 'Tara Westover — a girl who walked herself out' },
+        { name: 'The Remains of the Day', sub: 'Kazuo Ishiguro — did you live the life you meant to?' },
+        { name: 'How to Do Nothing', sub: 'Jenny Odell — a serious question about where your attention goes' },
+      ]
+    }
+  },
+  {
+    type: 'place',
+    emoji: '◎',
+    category: 'places',
+    title: 'places I\'ve been',
+    short: 'Korea · Japan · HK · Australia · Canada',
+    detail: {
+      desc: 'Every place left something behind.',
+      list: [
+        { name: 'Korea', sub: 'the energy, the food, the way everything feels dialled up' },
+        { name: 'Japan', sub: 'quiet precision — a country that takes care of its details' },
+        { name: 'Hong Kong', sub: 'fast, layered, electric' },
+        { name: 'Australia', sub: 'the scale of open space does something to you' },
+        { name: 'Canada', sub: 'the kind of vastness that makes you think differently' },
+      ]
+    }
+  },
+  {
+    type: 'place',
+    emoji: '→',
+    category: 'wandering',
+    title: 'places I want to go',
+    short: 'Czech Republic · Malaysia · and counting',
+    detail: {
+      desc: 'The list keeps growing faster than I can travel.',
+      list: [
+        { name: 'Czech Republic', sub: 'Prague has been living in my head for a while' },
+        { name: 'Malaysia', sub: 'for the food, the heat, the mix of everything' },
+      ]
+    }
+  },
+];
+
+// ── BOARD LOGIC ───────────────────────────────────────────
+const board = document.getElementById('board');
+let activeFilter = 'all';
+let zCounter = 10;
+
+function getBoard() {
+  return { w: board.offsetWidth, h: board.offsetHeight };
+}
+
+function buildCards(filter) {
+  board.innerHTML = '';
+  const toShow = filter === 'all' ? cards : cards.filter(c => c.type === filter);
+  const { w, h } = getBoard();
+
+  toShow.forEach((data, i) => {
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.dataset.type = data.type;
+    el.dataset.index = cards.indexOf(data);
+
+    const angle = (Math.random() - 0.5) * 10;
+    const cardW = 168;
+    const cardH = 100;
+    const x = 20 + Math.random() * Math.max(10, w - cardW - 40);
+    const y = 20 + Math.random() * Math.max(10, h - cardH - 40);
+
+    el.style.left = x + 'px';
+    el.style.top  = y + 'px';
+    el.style.transform = `rotate(${angle}deg)`;
+    el.style.zIndex = i + 1;
+    el.style.animationDelay = (i * 0.06) + 's';
+
+    el.innerHTML = `
+      <span class="card-emoji">${data.emoji}</span>
+      <div class="card-category">${data.category}</div>
+      <div class="card-title">${data.title}</div>
+      <div class="card-detail">${data.short}</div>
+    `;
+
+    makeDraggable(el, data);
+    board.appendChild(el);
+  });
+}
+
+function makeDraggable(el, data) {
+  let startX, startY, origLeft, origTop, moved;
+
+  el.addEventListener('mousedown', e => {
+    e.preventDefault();
+    startX = e.clientX;
+    startY = e.clientY;
+    const rect = el.getBoundingClientRect();
+    const boardRect = board.getBoundingClientRect();
+    origLeft = rect.left - boardRect.left;
+    origTop  = rect.top  - boardRect.top;
+    moved = false;
+
+    el.classList.add('dragging');
+    el.style.transform = 'rotate(0deg)';
+    el.style.zIndex = ++zCounter;
+
+    function onMove(e) {
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+      el.style.left = (origLeft + dx) + 'px';
+      el.style.top  = (origTop  + dy) + 'px';
+    }
+
+    function onUp() {
+      el.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      if (!moved) openModal(data);
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  // Touch support
+  el.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    startX = t.clientX; startY = t.clientY;
+    const rect = el.getBoundingClientRect();
+    const boardRect = board.getBoundingClientRect();
+    origLeft = rect.left - boardRect.left;
+    origTop  = rect.top  - boardRect.top;
+    moved = false;
+    el.style.zIndex = ++zCounter;
+    el.style.transform = 'rotate(0deg)';
+  }, { passive: true });
+
+  el.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const t = e.touches[0];
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+    el.style.left = (origLeft + dx) + 'px';
+    el.style.top  = (origTop  + dy) + 'px';
+  }, { passive: false });
+
+  el.addEventListener('touchend', () => {
+    if (!moved) openModal(data);
+  });
+}
+
+function shuffleCards() { buildCards(activeFilter); }
+
+function filterCards(type) {
+  activeFilter = type;
+  buildCards(type);
+}
+
+// ── MODAL ─────────────────────────────────────────────────
+function openModal(data) {
+  document.getElementById('mCat').textContent   = data.category;
+  document.getElementById('mTitle').textContent = data.title;
+
+  let html = `<p>${data.detail.desc}</p>`;
+  if (data.detail.spotify) {
+    html += `<div style="margin-top:1rem;">
+      <iframe style="border-radius:8px" src="${data.detail.spotify}" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+    </div>`;
+  }
+  if (data.detail.list && data.detail.list.length) {
+    html += '<ul class="modal-list">';
+    data.detail.list.forEach((item, i) => {
+      html += `<li>
+        <span class="item-num">${String(i+1).padStart(2,'0')}</span>
+        <span>
+          <span class="item-name">${item.name}</span>
+          ${item.sub ? `<span class="item-sub">${item.sub}</span>` : ''}
+        </span>
+      </li>`;
+    });
+    html += '</ul>';
+  }
+
+  document.getElementById('mBody').innerHTML = html;
+  document.getElementById('modalBg').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modalBg')) closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('modalBg').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModalDirect();
+});
+
+// ── INIT ──────────────────────────────────────────────────
+window.addEventListener('load', () => buildCards('all'));
+window.addEventListener('resize', () => buildCards(activeFilter));
+</script>
+</body>
+</html>
